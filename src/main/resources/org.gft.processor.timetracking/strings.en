@@ -1,0 +1,8 @@
+org.gft.processors.time-tracking.title=TimeTracking
+org.gft.processors.time-tracking.description=Convert Instantaneous Power to Hourly Power
+
+value.title= Instantaneous Power
+value.description= Example Value Description
+
+timestamp_value.title= Timestamp
+timestamp_value.description=Example Timestamp Description
