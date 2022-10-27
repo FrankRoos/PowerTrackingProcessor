@@ -54,7 +54,7 @@ public class TimeTrackingProcessor extends StreamPipesDataProcessor {
 
     @Override
     public DataProcessorDescription declareModel() {
-        return ProcessingElementBuilder.create("org.gft.processor.timetracking")
+        return ProcessingElementBuilder.create("org.gft.processor.timetracking","TimeTracking", "Convert Instantaneous Power to Hourly Power")
                 .withAssets(Assets.DOCUMENTATION, Assets.ICON)
                 .withLocales(Locales.EN)
                 .category(DataProcessorType.AGGREGATE)
