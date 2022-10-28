@@ -1,5 +1,5 @@
-org.gft.processor.timetracking.title=TimeTracking
-org.gft.processor.timetracking.description=Convert Instantaneous Power to Hourly Power
+org.gft.processor.powertracking.title=TimeTracking
+org.gft.processor.powertracking.description=Convert Instantaneous Power to Hourly Power
 
 value.title= Instantaneous Power
 value.description= Energy Transfer speed in one second

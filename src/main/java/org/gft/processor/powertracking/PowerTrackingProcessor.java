@@ -16,7 +16,7 @@
  *
  */
 
-package org.gft.processor.timetracking;
+package org.gft.processor.powertracking;
 
 import org.apache.streampipes.commons.exceptions.SpRuntimeException;
 import org.apache.streampipes.model.DataProcessorType;
@@ -41,7 +41,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class TimeTrackingProcessor extends StreamPipesDataProcessor {
+public class PowerTrackingProcessor extends StreamPipesDataProcessor {
 
     private String input_value;
     private String timestamp_value;
@@ -54,7 +54,7 @@ public class TimeTrackingProcessor extends StreamPipesDataProcessor {
 
     @Override
     public DataProcessorDescription declareModel() {
-        return ProcessingElementBuilder.create("org.gft.processor.timetracking","TimeTracking", "Convert Instantaneous Power to Hourly Power")
+        return ProcessingElementBuilder.create("org.gft.processor.powertracking","TimeTracking", "Convert Instantaneous Power to Hourly Power")
                 .withAssets(Assets.DOCUMENTATION, Assets.ICON)
                 .withLocales(Locales.EN)
                 .category(DataProcessorType.AGGREGATE)

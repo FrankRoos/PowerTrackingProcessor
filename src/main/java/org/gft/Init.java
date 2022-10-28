@@ -29,7 +29,7 @@ import org.apache.streampipes.messaging.jms.SpJmsProtocolFactory;
 import org.apache.streampipes.messaging.kafka.SpKafkaProtocolFactory;
 import org.apache.streampipes.messaging.mqtt.SpMqttProtocolFactory;
 
-import org.gft.processor.timetracking.TimeTrackingProcessor;
+import org.gft.processor.powertracking.PowerTrackingProcessor;
 
 public class Init extends ExtensionsModelSubmitter {
 
@@ -42,7 +42,7 @@ public class Init extends ExtensionsModelSubmitter {
     return SpServiceDefinitionBuilder.create("org.gft",
                     "human-readable service name",
                     "human-readable service description", 8090)
-            .registerPipelineElement(new TimeTrackingProcessor())
+            .registerPipelineElement(new PowerTrackingProcessor())
             .registerMessagingFormats(
                     new JsonDataFormatFactory(),
                     new CborDataFormatFactory(),
