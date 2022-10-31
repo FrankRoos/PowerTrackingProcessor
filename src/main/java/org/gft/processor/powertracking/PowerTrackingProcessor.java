@@ -42,15 +42,19 @@ import java.util.List;
 
 
 public class PowerTrackingProcessor extends StreamPipesDataProcessor {
-
-    private String input_value;
-    private String timestamp_value;
+    private String input_power_value;
+    private String input_timestamp_value;
     private static final String INPUT_VALUE = "value";
     private static final String TIMESTAMP_VALUE = "timestamp_value";
+    private static final String WAITING_TIME = "time_range";
 
-    List<Double> powerValueList = new ArrayList<>();
-    List<Double> timestampValueList = new ArrayList<>();
-    private Double first_timestamp=0.0;
+    List<Double> powersListForHourlyBasedComputation = new ArrayList<>();
+    List<Integer> timestampsListForHourlyBasedComputation = new ArrayList<>();
+    List<Double> powersListForWaitingTimeBasedComputation = new ArrayList<>();
+    List<Integer> timestampsListForWaitingTimeBasedComputation = new ArrayList<>();
+    private Integer hourlytime_start =0;
+    private Integer waiting_time;
+    private Integer waitingtime_start =0;
 
     @Override
     public DataProcessorDescription declareModel() {
@@ -64,62 +68,89 @@ public class PowerTrackingProcessor extends StreamPipesDataProcessor {
                         .requiredPropertyWithUnaryMapping(EpRequirements.numberReq(),
                                 Labels.withId(TIMESTAMP_VALUE), PropertyScope.NONE)
                         .build())
-                .outputStrategy(OutputStrategies.append(PrimitivePropertyBuilder.create(Datatypes.Double, "outputValue").build()))
+                .requiredIntegerParameter(Labels.withId(WAITING_TIME))
+                //.outputStrategy(OutputStrategies.append(PrimitivePropertyBuilder.create(Datatypes.Double, "outputValue").build()))
+                .outputStrategy(OutputStrategies.custom())
                 .build();
     }
 
 
     @Override
-    public void onInvocation(ProcessorParams processorParams,
-                             SpOutputCollector out,
-                             EventProcessorRuntimeContext ctx) throws SpRuntimeException  {
-        this.input_value = processorParams.extractor().mappingPropertyValue(INPUT_VALUE);
-        this.timestamp_value = processorParams.extractor().mappingPropertyValue(TIMESTAMP_VALUE);
+    public void onInvocation(ProcessorParams parameters, SpOutputCollector out, EventProcessorRuntimeContext ctx) throws SpRuntimeException  {
+        this.input_power_value = parameters.extractor().mappingPropertyValue(INPUT_VALUE);
+        this.input_timestamp_value = parameters.extractor().mappingPropertyValue(TIMESTAMP_VALUE);
+        this.waiting_time = parameters.extractor().singleValueParameter(WAITING_TIME, Integer.class);
     }
 
     @Override
     public void onEvent(Event event,SpOutputCollector out){
-        double energy = 0.0;
+        double power_hourly = 0.0;
+        double power_waitingtime = 0.0;
+        int waiting_time = this.waiting_time*60*1000;
 
         //recovery input value
-        Double value = event.getFieldBySelector(this.input_value).getAsPrimitive().getAsDouble();
+        Double value = event.getFieldBySelector(this.input_power_value).getAsPrimitive().getAsDouble();
         System.out.println("value: " + value);
 
         //recovery timestamp value
-        Double timestamp = event.getFieldBySelector(this.timestamp_value).getAsPrimitive().getAsDouble();
-        System.out.println("timestampStr: " + timestamp);
+        Integer timestamp = event.getFieldBySelector(this.input_timestamp_value).getAsPrimitive().getAsInt();
 
-        System.out.println("timestamp Diff: " + (timestamp - first_timestamp));
+       if(((timestamp - waitingtime_start >= waiting_time) || (timestamp - hourlytime_start >= 3600000)) && hourlytime_start != 0){
 
-        if (first_timestamp == 0.0){
-            System.out.println("******** first_timestamp == 0.0 ************");
-            first_timestamp=timestamp;
-            powerValueList.add(value);
-            timestampValueList.add(timestamp);
-        }else if (timestamp - first_timestamp >= 3600000){
-            System.out.println("******** DIFF >= 3600000 ************");
-            powerValueList.add(value);
-            timestampValueList.add(timestamp);
-            first_timestamp=timestamp;
-            //perform operations to obtain energy/hourly power from instantaneous powers
-            energy = powerToEnergy(powerValueList, timestampValueList);
-            // Remove all elements from the Lists
-            powerValueList.clear();
-            timestampValueList.clear();
+            if(timestamp - waitingtime_start >= waiting_time){
+                // reset the start time
+                waitingtime_start = timestamp;
+                // add value to the lists
+                powersListForWaitingTimeBasedComputation.add(value);
+                timestampsListForWaitingTimeBasedComputation.add(timestamp);
+                //perform operations to obtain waiting time power from instantaneous powers
+                power_waitingtime = powerToEnergy(powersListForWaitingTimeBasedComputation, timestampsListForWaitingTimeBasedComputation);
+                // Remove all elements from the Lists
+                powersListForWaitingTimeBasedComputation.clear();
+                timestampsListForWaitingTimeBasedComputation.clear();
+            }
+
+            if (timestamp - hourlytime_start >= 3600000) {
+                // reset the start time
+                hourlytime_start =timestamp;
+                // add value to the lists
+                powersListForHourlyBasedComputation.add(value);
+                timestampsListForHourlyBasedComputation.add(timestamp);
+                //perform operations to obtain hourly power from instantaneous powers
+                power_hourly = powerToEnergy(powersListForHourlyBasedComputation, timestampsListForHourlyBasedComputation);
+                // Remove all elements from the Lists
+                powersListForHourlyBasedComputation.clear();
+                timestampsListForHourlyBasedComputation.clear();
+            }
+
         }else {
-            System.out.println("******** ELSE ************");
-            powerValueList.add(value);
-            timestampValueList.add(timestamp);
+               if (hourlytime_start == 0){
+                   // set the first timestamp
+                   hourlytime_start = timestamp;
+                   waitingtime_start = timestamp;
+               }
+               // add value to the lists
+               powersListForHourlyBasedComputation.add(value);
+               timestampsListForHourlyBasedComputation.add(timestamp);
+               powersListForWaitingTimeBasedComputation.add(value);
+               timestampsListForWaitingTimeBasedComputation.add(timestamp);
         }
 
-        if(energy != 0.0){
-            System.out.println("======= OUTPUT VALUE ============" + energy);
-            event.addField("Energy", energy);
+        if(power_waitingtime != 0.0){
+            System.out.println("======= OUTPUT VALUE ============" + power_waitingtime);
+            event.addField("Power per Waiting Time", power_waitingtime);
             out.collect(event);
         }
+
+        if(power_hourly != 0.0){
+            System.out.println("======= OUTPUT VALUE ============" + power_hourly);
+            event.addField("Hourly Power", power_hourly);
+            out.collect(event);
+        }
+
     }
 
-    public double powerToEnergy(List<Double> powers, List<Double> timestamps) {
+    public double powerToEnergy(List<Double> powers, List<Integer> timestamps) {
         double sum = 0.0;
         //perform Riemann approximations by trapezoids which is an approximation of the area
         // under the curve (which corresponds to the energy/hourly power) formed by the points
