@@ -23,7 +23,7 @@ import org.apache.streampipes.model.DataProcessorType;
 import org.apache.streampipes.model.graph.DataProcessorDescription;
 import org.apache.streampipes.model.runtime.Event;
 import org.apache.streampipes.model.schema.PropertyScope;
-import org.apache.streampipes.sdk.builder.PrimitivePropertyBuilder;
+// import org.apache.streampipes.sdk.builder.PrimitivePropertyBuilder;
 import org.apache.streampipes.sdk.builder.ProcessingElementBuilder;
 import org.apache.streampipes.sdk.builder.StreamRequirementsBuilder;
 import org.apache.streampipes.sdk.helpers.EpRequirements;
@@ -31,7 +31,7 @@ import org.apache.streampipes.sdk.helpers.Labels;
 import org.apache.streampipes.sdk.helpers.Locales;
 import org.apache.streampipes.sdk.helpers.OutputStrategies;
 import org.apache.streampipes.sdk.utils.Assets;
-import org.apache.streampipes.sdk.utils.Datatypes;
+// import org.apache.streampipes.sdk.utils.Datatypes;
 import org.apache.streampipes.wrapper.context.EventProcessorRuntimeContext;
 import org.apache.streampipes.wrapper.routing.SpOutputCollector;
 import org.apache.streampipes.wrapper.standalone.ProcessorParams;
@@ -44,17 +44,18 @@ import java.util.List;
 public class PowerTrackingProcessor extends StreamPipesDataProcessor {
     private String input_power_value;
     private String input_timestamp_value;
+    private Integer waiting_time;
+    private Double waitingtime_start = 0.0;
+    private Double hourlytime_start = 0.0;
     private static final String INPUT_VALUE = "value";
     private static final String TIMESTAMP_VALUE = "timestamp_value";
     private static final String WAITING_TIME = "time_range";
 
     List<Double> powersListForHourlyBasedComputation = new ArrayList<>();
-    List<Integer> timestampsListForHourlyBasedComputation = new ArrayList<>();
+    List<Double> timestampsListForHourlyBasedComputation = new ArrayList<>();
     List<Double> powersListForWaitingTimeBasedComputation = new ArrayList<>();
-    List<Integer> timestampsListForWaitingTimeBasedComputation = new ArrayList<>();
-    private Integer hourlytime_start =0;
-    private Integer waiting_time;
-    private Integer waitingtime_start =0;
+    List<Double> timestampsListForWaitingTimeBasedComputation = new ArrayList<>();
+
 
     @Override
     public DataProcessorDescription declareModel() {
@@ -86,79 +87,92 @@ public class PowerTrackingProcessor extends StreamPipesDataProcessor {
     public void onEvent(Event event,SpOutputCollector out){
         double power_hourly = 0.0;
         double power_waitingtime = 0.0;
-        int waiting_time = this.waiting_time*60*1000;
+        double waiting_time = this.waiting_time*60*1000;
+        double period;
 
         //recovery input value
-        Double value = event.getFieldBySelector(this.input_power_value).getAsPrimitive().getAsDouble();
-        System.out.println("value: " + value);
+        Double power = event.getFieldBySelector(this.input_power_value).getAsPrimitive().getAsDouble();
+        // System.out.println("power value: " + power);
 
         //recovery timestamp value
-        Integer timestamp = event.getFieldBySelector(this.input_timestamp_value).getAsPrimitive().getAsInt();
+        Double timestamp = event.getFieldBySelector(this.input_timestamp_value).getAsPrimitive().getAsDouble();
+        // System.out.println("timestamp value: " + timestamp);
 
-       if(((timestamp - waitingtime_start >= waiting_time) || (timestamp - hourlytime_start >= 3600000)) && hourlytime_start != 0){
+       if(((timestamp - waitingtime_start >= waiting_time) || (timestamp - hourlytime_start >= 3600000)) && waitingtime_start != 0.0){
 
             if(timestamp - waitingtime_start >= waiting_time){
-                // reset the start time
+                // set period consumption in hour
+                period = this.waiting_time/60.0;
+                // reset the start time for computations
                 waitingtime_start = timestamp;
-                // add value to the lists
-                powersListForWaitingTimeBasedComputation.add(value);
+                // add power to the lists
+                powersListForWaitingTimeBasedComputation.add(power);
                 timestampsListForWaitingTimeBasedComputation.add(timestamp);
                 //perform operations to obtain waiting time power from instantaneous powers
-                power_waitingtime = powerToEnergy(powersListForWaitingTimeBasedComputation, timestampsListForWaitingTimeBasedComputation);
+                power_waitingtime = powerToEnergy(powersListForWaitingTimeBasedComputation, timestampsListForWaitingTimeBasedComputation, period);
                 // Remove all elements from the Lists
                 powersListForWaitingTimeBasedComputation.clear();
                 timestampsListForWaitingTimeBasedComputation.clear();
             }
 
             if (timestamp - hourlytime_start >= 3600000) {
-                // reset the start time
+                // set period consumption in hour
+                period = 1.0;
+                // reset the start time for computations
                 hourlytime_start =timestamp;
-                // add value to the lists
-                powersListForHourlyBasedComputation.add(value);
+                // add power to the lists
+                powersListForHourlyBasedComputation.add(power);
                 timestampsListForHourlyBasedComputation.add(timestamp);
                 //perform operations to obtain hourly power from instantaneous powers
-                power_hourly = powerToEnergy(powersListForHourlyBasedComputation, timestampsListForHourlyBasedComputation);
+                power_hourly = powerToEnergy(powersListForHourlyBasedComputation, timestampsListForHourlyBasedComputation, period);
                 // Remove all elements from the Lists
                 powersListForHourlyBasedComputation.clear();
                 timestampsListForHourlyBasedComputation.clear();
             }
 
         }else {
-               if (hourlytime_start == 0){
-                   // set the first timestamp
+               // set the start time for computations
+               if (waitingtime_start == 0.0){
                    hourlytime_start = timestamp;
                    waitingtime_start = timestamp;
                }
-               // add value to the lists
-               powersListForHourlyBasedComputation.add(value);
+
+               // add power to the lists
+               powersListForHourlyBasedComputation.add(power);
                timestampsListForHourlyBasedComputation.add(timestamp);
-               powersListForWaitingTimeBasedComputation.add(value);
+               powersListForWaitingTimeBasedComputation.add(power);
                timestampsListForWaitingTimeBasedComputation.add(timestamp);
         }
 
         if(power_waitingtime != 0.0){
-            System.out.println("======= OUTPUT VALUE ============" + power_waitingtime);
+            System.out.println("======= OUTPUT WAITING TIME VALUE ============" + power_waitingtime);
             event.addField("Power per Waiting Time", power_waitingtime);
             out.collect(event);
         }
 
         if(power_hourly != 0.0){
-            System.out.println("======= OUTPUT VALUE ============" + power_hourly);
+            System.out.println("======= OUTPUT HOURLY VALUE ============" + power_hourly);
             event.addField("Hourly Power", power_hourly);
             out.collect(event);
         }
 
     }
 
-    public double powerToEnergy(List<Double> powers, List<Integer> timestamps) {
+    public double powerToEnergy(List<Double> powers, List<Double> timestamps, double period) {
         double sum = 0.0;
+        double first_base;
+        double second_base;
+        double height;
         //perform Riemann approximations by trapezoids which is an approximation of the area
         // under the curve (which corresponds to the energy/hourly power) formed by the points
         // with coordinate power(ordinate) e timestamp(abscissa)
         for(int i = 0; i<powers.size()-1; i++){
-            sum += ((powers.get(i)+powers.get(i+1))/2) * (timestamps.get(i+1) - timestamps.get(i)) ;
+            first_base = powers.get(i);
+            second_base = powers.get(i+1);
+            height = (timestamps.get(i+1) - timestamps.get(i))/1000;
+            sum += ((first_base + second_base) / 2) * height ;
         }
-        return sum;
+        return (sum/3600)*period;
     }
 
     @Override

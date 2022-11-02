@@ -8,4 +8,4 @@ timestamp_value.title= Timestamp
 timestamp_value.description= Time at which the power was taken.
 
 time_range.title = Waiting Time
-time_range.description = Insert the time (in minute) after which an output will be generated.
+time_range.description = Insert the period or time value (in minute) after which an output will be generated.
