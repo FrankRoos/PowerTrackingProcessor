@@ -26,6 +26,7 @@
 
 ## Description
 This processor computes power per waiting time or hourly power  based on given instantaneous powers/timestamps values that are transmitted as fields from events.
+Convert Instantaneous Power to Hourly Power.
 
 ***
 
@@ -40,7 +41,7 @@ The field containing the power value as a double in Watt.
 ### Timestamp
 The field containing the time value (in millisecond) at which the power was taken.
 ### Waiting Time
-The field containing the time value (in minute) after which an output will be computed.
+The field containing the period or time value (in minute) after which an output will be computed.
 
 ***
 
