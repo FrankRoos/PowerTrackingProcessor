@@ -25,17 +25,25 @@
 ***
 
 ## Description
-Describe your new data processor here!
+This processor computes power per waiting time or hourly power  based on given instantaneous powers/timestamps values that are transmitted as fields from events.
+Convert Instantaneous Power to Hourly Power.
 
 ***
 
 ## Required input
-What are the input requirements of your data processor?
+Input event requires to have power and timestamp values.
 
 ***
 
 ## Configuration
-What are the configurations a user has to provide?
+### Instantaneous Power
+The field containing the power value as a double in Watt.
+### Timestamp
+The field containing the time value (in millisecond) at which the power was taken.
+### Waiting Time
+The field containing the period or time value (in minute) after which an output will be computed.
+
+***
 
 ## Output
-How do the events your data processor emits look like?
+The Power Tracking processor appends the calculated power as a double in Watt-hour (Wh).

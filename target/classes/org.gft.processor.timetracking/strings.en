@@ -1,8 +1,0 @@
-org.gft.processor.timetracking.title=TimeTracking
-org.gft.processor.timetracking.description=Convert Instantaneous Power to Hourly Power
-
-value.title= Instantaneous Power
-value.description= Energy Transfer speed in one second
-
-timestamp_value.title= Timestamp
-timestamp_value.description= Time at which the power was taken.
