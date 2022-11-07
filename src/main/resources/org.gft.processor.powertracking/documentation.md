@@ -37,7 +37,7 @@ Input event requires to have power and timestamp values.
 
 ## Configuration
 ### Instantaneous Power
-The field containing the power value as a double in Watt.
+The field containing the power value as a double in Kilowatt (kW).
 ### Timestamp
 The field containing the time value (in millisecond) at which the power was taken.
 ### Waiting Time
@@ -46,4 +46,4 @@ The field containing the period or time value (in minute) after which an output 
 ***
 
 ## Output
-The Power Tracking processor appends the calculated power as a double in Watt-hour (Wh).
+The Power Tracking processor appends the calculated power as a double in Kilowatt-hour (kWh).
