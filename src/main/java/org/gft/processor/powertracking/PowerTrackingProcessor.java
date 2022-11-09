@@ -37,6 +37,8 @@ import org.apache.streampipes.wrapper.routing.SpOutputCollector;
 import org.apache.streampipes.wrapper.standalone.ProcessorParams;
 import org.apache.streampipes.wrapper.standalone.StreamPipesDataProcessor;
 
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -88,7 +90,6 @@ public class PowerTrackingProcessor extends StreamPipesDataProcessor {
         double power_hourly = 0.0;
         double power_waitingtime = 0.0;
         double waiting_time = this.waiting_time*60*1000;
-        double period;
 
         //recovery input value
         Double power = event.getFieldBySelector(this.input_power_value).getAsPrimitive().getAsDouble();
@@ -101,33 +102,33 @@ public class PowerTrackingProcessor extends StreamPipesDataProcessor {
        if(((timestamp - waitingtime_start >= waiting_time) || (timestamp - hourlytime_start >= 3600000)) && waitingtime_start != 0.0){
 
             if(timestamp - waitingtime_start >= waiting_time){
-                // set period consumption in hour
-                period = this.waiting_time/60.0;
                 // reset the start time for computations
                 waitingtime_start = timestamp;
                 // add power to the lists
                 powersListForWaitingTimeBasedComputation.add(power);
                 timestampsListForWaitingTimeBasedComputation.add(timestamp);
                 //perform operations to obtain waiting time power from instantaneous powers
-                power_waitingtime = powerToEnergy(powersListForWaitingTimeBasedComputation, timestampsListForWaitingTimeBasedComputation, period);
+                power_waitingtime = powerToEnergy(powersListForWaitingTimeBasedComputation, timestampsListForWaitingTimeBasedComputation);
                 // Remove all elements from the Lists
                 powersListForWaitingTimeBasedComputation.clear();
                 timestampsListForWaitingTimeBasedComputation.clear();
+                powersListForWaitingTimeBasedComputation.add(power);
+                timestampsListForWaitingTimeBasedComputation.add(timestamp);
             }
 
             if (timestamp - hourlytime_start >= 3600000) {
-                // set period consumption in hour
-                period = 1.0;
                 // reset the start time for computations
-                hourlytime_start =timestamp;
+                hourlytime_start  = timestamp;
                 // add power to the lists
                 powersListForHourlyBasedComputation.add(power);
                 timestampsListForHourlyBasedComputation.add(timestamp);
                 //perform operations to obtain hourly power from instantaneous powers
-                power_hourly = powerToEnergy(powersListForHourlyBasedComputation, timestampsListForHourlyBasedComputation, period);
+                power_hourly = powerToEnergy(powersListForHourlyBasedComputation, timestampsListForHourlyBasedComputation);
                 // Remove all elements from the Lists
                 powersListForHourlyBasedComputation.clear();
                 timestampsListForHourlyBasedComputation.clear();
+                powersListForHourlyBasedComputation.add(power);
+                timestampsListForHourlyBasedComputation.add(timestamp);
             }
 
         }else {
@@ -158,11 +159,13 @@ public class PowerTrackingProcessor extends StreamPipesDataProcessor {
 
     }
 
-    public double powerToEnergy(List<Double> powers, List<Double> timestamps, double period) {
+    public double powerToEnergy(List<Double> powers, List<Double> timestamps) {
         double sum = 0.0;
         double first_base;
         double second_base;
         double height;
+        DecimalFormat df = new DecimalFormat("#.#####");
+        df.setRoundingMode(RoundingMode.CEILING);
         //perform Riemann approximations by trapezoids which is an approximation of the area
         // under the curve (which corresponds to the energy/hourly power) formed by the points
         // with coordinate power(ordinate) e timestamp(abscissa)
@@ -172,7 +175,7 @@ public class PowerTrackingProcessor extends StreamPipesDataProcessor {
             height = (timestamps.get(i+1) - timestamps.get(i))/1000;
             sum += ((first_base + second_base) / 2) * height ;
         }
-        return (sum/3600)*period;
+        return Double.parseDouble(df.format(sum/3600));
     }
 
     @Override
