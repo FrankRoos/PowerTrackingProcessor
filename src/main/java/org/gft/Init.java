@@ -34,6 +34,7 @@ import org.gft.processor.powertracking.PowerTrackingProcessor;
 public class Init extends ExtensionsModelSubmitter {
 
   public static void main (String[] args) {
+    PowerTrackingProcessor.setupLogger();
     new Init().init();
   }
 
