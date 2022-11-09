@@ -147,12 +147,14 @@ public class PowerTrackingProcessor extends StreamPipesDataProcessor {
 
         if(power_waitingtime != 0.0){
             logr.info("=== OUTPUT WAITING TIME VALUE =======" + power_waitingtime);
+            logger.info("=== OUTPUT WAITING TIME VALUE =======" + power_waitingtime);
             event.addField("Power per Waiting Time", power_waitingtime);
             out.collect(event);
         }
 
         if(power_hourly != 0.0){
             logr.info("============================= OUTPUT HOURLY VALUE =========" + power_hourly);
+            logger.info("============================= OUTPUT HOURLY VALUE =========" + power_hourly);
             event.addField("Hourly Power", power_hourly);
             out.collect(event);
         }
