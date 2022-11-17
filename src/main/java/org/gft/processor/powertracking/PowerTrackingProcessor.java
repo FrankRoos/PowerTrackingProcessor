@@ -23,7 +23,6 @@ import org.apache.streampipes.model.DataProcessorType;
 import org.apache.streampipes.model.graph.DataProcessorDescription;
 import org.apache.streampipes.model.runtime.Event;
 import org.apache.streampipes.model.schema.PropertyScope;
-// import org.apache.streampipes.sdk.builder.PrimitivePropertyBuilder;
 import org.apache.streampipes.sdk.builder.ProcessingElementBuilder;
 import org.apache.streampipes.sdk.builder.StreamRequirementsBuilder;
 import org.apache.streampipes.sdk.helpers.EpRequirements;
@@ -31,7 +30,6 @@ import org.apache.streampipes.sdk.helpers.Labels;
 import org.apache.streampipes.sdk.helpers.Locales;
 import org.apache.streampipes.sdk.helpers.OutputStrategies;
 import org.apache.streampipes.sdk.utils.Assets;
-// import org.apache.streampipes.sdk.utils.Datatypes;
 import org.apache.streampipes.wrapper.context.EventProcessorRuntimeContext;
 import org.apache.streampipes.wrapper.routing.SpOutputCollector;
 import org.apache.streampipes.wrapper.standalone.ProcessorParams;
@@ -87,8 +85,8 @@ public class PowerTrackingProcessor extends StreamPipesDataProcessor {
 
     @Override
     public void onEvent(Event event,SpOutputCollector out){
-        double power_hourly = 0.0;
-        double power_waitingtime = 0.0;
+        double power_hourly;
+        double power_waitingtime;
         double waiting_time = this.waiting_time*60*1000;
 
         //recovery input value
@@ -109,9 +107,13 @@ public class PowerTrackingProcessor extends StreamPipesDataProcessor {
                 timestampsListForWaitingTimeBasedComputation.add(timestamp);
                 //perform operations to obtain waiting time power from instantaneous powers
                 power_waitingtime = powerToEnergy(powersListForWaitingTimeBasedComputation, timestampsListForWaitingTimeBasedComputation);
+                event.addField("PowerPerWaitingTime", power_waitingtime);
+                out.collect(event);
+                logr.info("=== OUTPUT WAITING TIME VALUE =======" + power_waitingtime);
                 // Remove all elements from the Lists
                 powersListForWaitingTimeBasedComputation.clear();
                 timestampsListForWaitingTimeBasedComputation.clear();
+                // Add newly current events for the next computation
                 powersListForWaitingTimeBasedComputation.add(power);
                 timestampsListForWaitingTimeBasedComputation.add(timestamp);
             }
@@ -124,9 +126,13 @@ public class PowerTrackingProcessor extends StreamPipesDataProcessor {
                 timestampsListForHourlyBasedComputation.add(timestamp);
                 //perform operations to obtain hourly power from instantaneous powers
                 power_hourly = powerToEnergy(powersListForHourlyBasedComputation, timestampsListForHourlyBasedComputation);
+                event.addField("HourlyPower", power_hourly);
+                out.collect(event);
+                logr.info("============================= OUTPUT HOURLY VALUE =========" + power_hourly);
                 // Remove all elements from the Lists
                 powersListForHourlyBasedComputation.clear();
                 timestampsListForHourlyBasedComputation.clear();
+                // Add newly current events for the next computation
                 powersListForHourlyBasedComputation.add(power);
                 timestampsListForHourlyBasedComputation.add(timestamp);
             }
@@ -137,26 +143,11 @@ public class PowerTrackingProcessor extends StreamPipesDataProcessor {
                    hourlytime_start = timestamp;
                    waitingtime_start = timestamp;
                }
-
                // add power to the lists
                powersListForHourlyBasedComputation.add(power);
                timestampsListForHourlyBasedComputation.add(timestamp);
                powersListForWaitingTimeBasedComputation.add(power);
                timestampsListForWaitingTimeBasedComputation.add(timestamp);
-        }
-
-        if(power_waitingtime != 0.0){
-            logr.info("=== OUTPUT WAITING TIME VALUE =======" + power_waitingtime);
-            logger.info("=== OUTPUT WAITING TIME VALUE =======" + power_waitingtime);
-            event.addField("Power per Waiting Time", power_waitingtime);
-            out.collect(event);
-        }
-
-        if(power_hourly != 0.0){
-            logr.info("============================= OUTPUT HOURLY VALUE =========" + power_hourly);
-            logger.info("============================= OUTPUT HOURLY VALUE =========" + power_hourly);
-            event.addField("Hourly Power", power_hourly);
-            out.collect(event);
         }
 
     }
