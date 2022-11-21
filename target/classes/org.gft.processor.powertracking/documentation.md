@@ -41,7 +41,7 @@ The field containing the power value as a double in Kilowatt (kW).
 ### Timestamp
 The field containing the time value (in millisecond) at which the power was taken.
 ### Waiting Time
-The field containing the period or time value (in minute) after which an output will be computed.
+The field containing the period or time value (in minute as a double) after which an output will be computed.
 
 ***
 

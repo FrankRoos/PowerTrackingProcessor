@@ -44,7 +44,7 @@ import java.util.logging.*;
 public class PowerTrackingProcessor extends StreamPipesDataProcessor {
     private String input_power_value;
     private String input_timestamp_value;
-    private Integer waiting_time;
+    private Double waiting_time;
     private Double waitingtime_start = 0.0;
     private Double hourlytime_start = 0.0;
     private static final String INPUT_VALUE = "value";
@@ -80,7 +80,7 @@ public class PowerTrackingProcessor extends StreamPipesDataProcessor {
     public void onInvocation(ProcessorParams parameters, SpOutputCollector out, EventProcessorRuntimeContext ctx) throws SpRuntimeException  {
         this.input_power_value = parameters.extractor().mappingPropertyValue(INPUT_VALUE);
         this.input_timestamp_value = parameters.extractor().mappingPropertyValue(TIMESTAMP_VALUE);
-        this.waiting_time = parameters.extractor().singleValueParameter(WAITING_TIME, Integer.class);
+        this.waiting_time = parameters.extractor().singleValueParameter(WAITING_TIME, Double.class);
     }
 
     @Override
@@ -191,7 +191,7 @@ public class PowerTrackingProcessor extends StreamPipesDataProcessor {
             e.printStackTrace();
         }
 
-        logger.info("Hi How r u?");
+        logr.info("Hi How r u?");
 
     }
 
