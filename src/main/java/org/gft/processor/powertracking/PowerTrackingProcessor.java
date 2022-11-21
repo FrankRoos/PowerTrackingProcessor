@@ -56,7 +56,6 @@ public class PowerTrackingProcessor extends StreamPipesDataProcessor {
     List<Double> powersListForWaitingTimeBasedComputation = new ArrayList<>();
     List<Double> timestampsListForWaitingTimeBasedComputation = new ArrayList<>();
 
-    private final static Logger logr = Logger.getLogger(PowerTrackingProcessor.class.getName());
     @Override
     public DataProcessorDescription declareModel() {
         return ProcessingElementBuilder.create("org.gft.processor.powertracking","TimeTracking", "Convert Instantaneous Power to Hourly Power")
@@ -109,7 +108,7 @@ public class PowerTrackingProcessor extends StreamPipesDataProcessor {
                 power_waitingtime = powerToEnergy(powersListForWaitingTimeBasedComputation, timestampsListForWaitingTimeBasedComputation);
                 event.addField("PowerPerWaitingTime", power_waitingtime);
                 out.collect(event);
-                logr.info("=== OUTPUT WAITING TIME VALUE =======" + power_waitingtime);
+                logger.info("=== OUTPUT WAITING TIME VALUE =======" + power_waitingtime);
                 // Remove all elements from the Lists
                 powersListForWaitingTimeBasedComputation.clear();
                 timestampsListForWaitingTimeBasedComputation.clear();
@@ -128,7 +127,7 @@ public class PowerTrackingProcessor extends StreamPipesDataProcessor {
                 power_hourly = powerToEnergy(powersListForHourlyBasedComputation, timestampsListForHourlyBasedComputation);
                 event.addField("HourlyPower", power_hourly);
                 out.collect(event);
-                logr.info("============================= OUTPUT HOURLY VALUE =========" + power_hourly);
+                logger.info("============================= OUTPUT HOURLY VALUE =========" + power_hourly);
                 // Remove all elements from the Lists
                 powersListForHourlyBasedComputation.clear();
                 timestampsListForHourlyBasedComputation.clear();
@@ -171,29 +170,6 @@ public class PowerTrackingProcessor extends StreamPipesDataProcessor {
         return Double.parseDouble(df.format(sum/3600));
     }
 
-    public static void setupLogger() {
-        LogManager.getLogManager().reset();
-        logr.setLevel(Level.ALL);
-
-        try {
-            FileHandler fh = new FileHandler("myLogger_%g.log", 500000, 2, true);
-            fh.setLevel(Level.FINE);
-            logr.addHandler(fh);
-            System.setProperty("java.util.logging.SimpleFormatter.format","%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS:%1$tL [%4$-6s]  %2$s %5$s %n");
-            Formatter formatter = new SimpleFormatter();
-            fh.setFormatter(formatter);
-        } catch (java.io.IOException e) {
-            // don't stop my program but log out to console.
-            logr.log(Level.SEVERE, "File logger not working.", e);
-            e.printStackTrace();
-        } catch (SecurityException e) {
-            logr.log(Level.SEVERE, "Security failure.", e);
-            e.printStackTrace();
-        }
-
-        logr.info("Hi How r u?");
-
-    }
 
     @Override
     public void onDetach(){
