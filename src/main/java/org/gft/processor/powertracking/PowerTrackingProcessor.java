@@ -39,7 +39,7 @@ import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.*;
+
 
 public class PowerTrackingProcessor extends StreamPipesDataProcessor {
     private String input_power_value;
@@ -69,7 +69,6 @@ public class PowerTrackingProcessor extends StreamPipesDataProcessor {
                                 Labels.withId(TIMESTAMP_VALUE), PropertyScope.NONE)
                         .build())
                 .requiredIntegerParameter(Labels.withId(WAITING_TIME))
-                //.outputStrategy(OutputStrategies.append(PrimitivePropertyBuilder.create(Datatypes.Double, "outputValue").build()))
                 .outputStrategy(OutputStrategies.custom())
                 .build();
     }
