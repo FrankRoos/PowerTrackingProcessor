@@ -169,7 +169,6 @@ public class PowerTrackingProcessor extends StreamPipesDataProcessor {
         return Double.parseDouble(df.format(sum/3600));
     }
 
-
     @Override
     public void onDetach(){
     }
