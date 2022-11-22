@@ -23,6 +23,7 @@ import org.apache.streampipes.model.DataProcessorType;
 import org.apache.streampipes.model.graph.DataProcessorDescription;
 import org.apache.streampipes.model.runtime.Event;
 import org.apache.streampipes.model.schema.PropertyScope;
+import org.apache.streampipes.sdk.builder.PrimitivePropertyBuilder;
 import org.apache.streampipes.sdk.builder.ProcessingElementBuilder;
 import org.apache.streampipes.sdk.builder.StreamRequirementsBuilder;
 import org.apache.streampipes.sdk.helpers.EpRequirements;
@@ -30,6 +31,7 @@ import org.apache.streampipes.sdk.helpers.Labels;
 import org.apache.streampipes.sdk.helpers.Locales;
 import org.apache.streampipes.sdk.helpers.OutputStrategies;
 import org.apache.streampipes.sdk.utils.Assets;
+import org.apache.streampipes.sdk.utils.Datatypes;
 import org.apache.streampipes.wrapper.context.EventProcessorRuntimeContext;
 import org.apache.streampipes.wrapper.routing.SpOutputCollector;
 import org.apache.streampipes.wrapper.standalone.ProcessorParams;
@@ -69,7 +71,9 @@ public class PowerTrackingProcessor extends StreamPipesDataProcessor {
                                 Labels.withId(TIMESTAMP_VALUE), PropertyScope.NONE)
                         .build())
                 .requiredIntegerParameter(Labels.withId(WAITING_TIME))
-                .outputStrategy(OutputStrategies.custom())
+                .outputStrategy(OutputStrategies.append(PrimitivePropertyBuilder.create(Datatypes.Double, "PowerPerWaitingTime").build(),
+                        PrimitivePropertyBuilder.create(Datatypes.Double, "HourlyPower").build()))
+                // .outputStrategy(OutputStrategies.custom())
                 .build();
     }
 
