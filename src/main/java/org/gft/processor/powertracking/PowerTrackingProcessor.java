@@ -23,15 +23,11 @@ import org.apache.streampipes.model.DataProcessorType;
 import org.apache.streampipes.model.graph.DataProcessorDescription;
 import org.apache.streampipes.model.runtime.Event;
 import org.apache.streampipes.model.schema.PropertyScope;
-import org.apache.streampipes.sdk.builder.PrimitivePropertyBuilder;
 import org.apache.streampipes.sdk.builder.ProcessingElementBuilder;
 import org.apache.streampipes.sdk.builder.StreamRequirementsBuilder;
-import org.apache.streampipes.sdk.helpers.EpRequirements;
-import org.apache.streampipes.sdk.helpers.Labels;
-import org.apache.streampipes.sdk.helpers.Locales;
-import org.apache.streampipes.sdk.helpers.OutputStrategies;
+import org.apache.streampipes.sdk.helpers.*;
 import org.apache.streampipes.sdk.utils.Assets;
-import org.apache.streampipes.sdk.utils.Datatypes;
+import org.apache.streampipes.vocabulary.SO;
 import org.apache.streampipes.wrapper.context.EventProcessorRuntimeContext;
 import org.apache.streampipes.wrapper.routing.SpOutputCollector;
 import org.apache.streampipes.wrapper.standalone.ProcessorParams;
@@ -52,6 +48,8 @@ public class PowerTrackingProcessor extends StreamPipesDataProcessor {
     private static final String INPUT_VALUE = "value";
     private static final String TIMESTAMP_VALUE = "timestamp_value";
     private static final String WAITING_TIME = "time_range";
+    private static final String POWER_HOURLY = "power_hourly";
+    private static final String POWER_WAITINGTIME = "power_waitingtime";
 
     List<Double> powersListForHourlyBasedComputation = new ArrayList<>();
     List<Double> timestampsListForHourlyBasedComputation = new ArrayList<>();
@@ -71,9 +69,8 @@ public class PowerTrackingProcessor extends StreamPipesDataProcessor {
                                 Labels.withId(TIMESTAMP_VALUE), PropertyScope.NONE)
                         .build())
                 .requiredIntegerParameter(Labels.withId(WAITING_TIME))
-                .outputStrategy(OutputStrategies.append(PrimitivePropertyBuilder.create(Datatypes.Double, "PowerPerWaitingTime").build(),
-                        PrimitivePropertyBuilder.create(Datatypes.Double, "HourlyPower").build()))
-                // .outputStrategy(OutputStrategies.custom())
+                .outputStrategy(OutputStrategies.append(EpProperties.doubleEp(Labels.withId(POWER_WAITINGTIME), "power waitingtime", SO.Number),
+                        EpProperties.doubleEp(Labels.withId(POWER_HOURLY), "power hourly", SO.Number)))
                 .build();
     }
 
@@ -87,8 +84,8 @@ public class PowerTrackingProcessor extends StreamPipesDataProcessor {
 
     @Override
     public void onEvent(Event event,SpOutputCollector out){
-        double power_hourly;
-        double power_waitingtime;
+        double power_hourly = 0.0;
+        double power_waitingtime = 0.0;
         double waiting_time = this.waiting_time*60*1000;
 
         //recovery input value
@@ -109,8 +106,6 @@ public class PowerTrackingProcessor extends StreamPipesDataProcessor {
                 timestampsListForWaitingTimeBasedComputation.add(timestamp);
                 //perform operations to obtain waiting time power from instantaneous powers
                 power_waitingtime = powerToEnergy(powersListForWaitingTimeBasedComputation, timestampsListForWaitingTimeBasedComputation);
-                event.addField("PowerPerWaitingTime", power_waitingtime);
-                out.collect(event);
                 logger.info("=== OUTPUT WAITING TIME VALUE =======" + power_waitingtime);
                 // Remove all elements from the Lists
                 powersListForWaitingTimeBasedComputation.clear();
@@ -128,8 +123,6 @@ public class PowerTrackingProcessor extends StreamPipesDataProcessor {
                 timestampsListForHourlyBasedComputation.add(timestamp);
                 //perform operations to obtain hourly power from instantaneous powers
                 power_hourly = powerToEnergy(powersListForHourlyBasedComputation, timestampsListForHourlyBasedComputation);
-                event.addField("HourlyPower", power_hourly);
-                out.collect(event);
                 logger.info("============================= OUTPUT HOURLY VALUE =========" + power_hourly);
                 // Remove all elements from the Lists
                 powersListForHourlyBasedComputation.clear();
@@ -151,6 +144,10 @@ public class PowerTrackingProcessor extends StreamPipesDataProcessor {
                powersListForWaitingTimeBasedComputation.add(power);
                timestampsListForWaitingTimeBasedComputation.add(timestamp);
         }
+
+        event.addField("power waitingtime", power_waitingtime);
+        event.addField("power hourly", power_hourly);
+        out.collect(event);
 
     }
 
