@@ -45,6 +45,8 @@ public class PowerTrackingProcessor extends StreamPipesDataProcessor {
     private Double waiting_time;
     private Double waitingtime_start = 0.0;
     private Double hourlytime_start = 0.0;
+    double power_hourly = 0.0;
+    double power_waitingtime = 0.0;
     private static final String INPUT_VALUE = "value";
     private static final String TIMESTAMP_VALUE = "timestamp_value";
     private static final String WAITING_TIME = "time_range";
@@ -84,8 +86,6 @@ public class PowerTrackingProcessor extends StreamPipesDataProcessor {
 
     @Override
     public void onEvent(Event event,SpOutputCollector out){
-        double power_hourly = 0.0;
-        double power_waitingtime = 0.0;
         double waiting_time = this.waiting_time*60*1000;
 
         //recovery input value
