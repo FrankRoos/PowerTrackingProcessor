@@ -25,8 +25,8 @@
 ***
 
 ## Description
-This processor computes power per waiting time or hourly power  based on given instantaneous powers/timestamps values that are transmitted as fields from events.
-Convert Instantaneous Power to Hourly Power.
+This processor computes waiting time and hourly Energy consumption, based on the given instantaneous powers/timestamps values that are transmitted as fields from events.
+
 
 ***
 

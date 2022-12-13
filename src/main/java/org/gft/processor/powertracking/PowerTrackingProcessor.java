@@ -60,7 +60,7 @@ public class PowerTrackingProcessor extends StreamPipesDataProcessor {
 
     @Override
     public DataProcessorDescription declareModel() {
-        return ProcessingElementBuilder.create("org.gft.processor.powertracking","TimeTracking", "Convert Instantaneous Power to Hourly Power")
+        return ProcessingElementBuilder.create("org.gft.processor.powertracking","TimeTracking", "Computes waiting time and hourly Energy consumption based on the given instantaneous powers and timestamps values")
                 .withAssets(Assets.DOCUMENTATION, Assets.ICON)
                 .withLocales(Locales.EN)
                 .category(DataProcessorType.AGGREGATE)
@@ -115,12 +115,10 @@ public class PowerTrackingProcessor extends StreamPipesDataProcessor {
                 timestampsListForWaitingTimeBasedComputation.add(timestamp);
             }
 
-            if (timestamp - hourlytime_start >= 3600000) {
+            if (timestamp - hourlytime_start > 3600000) {
                 // reset the start time for computations
                 hourlytime_start  = timestamp;
-                // add power to the lists
-                powersListForHourlyBasedComputation.add(power);
-                timestampsListForHourlyBasedComputation.add(timestamp);
+
                 //perform operations to obtain hourly power from instantaneous powers
                 power_hourly = powerToEnergy(powersListForHourlyBasedComputation, timestampsListForHourlyBasedComputation);
                 logger.info("============================= OUTPUT HOURLY VALUE =========" + power_hourly);
