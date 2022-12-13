@@ -102,7 +102,6 @@ public class PowerTrackingProcessor extends StreamPipesDataProcessor {
             if(timestamp - waitingtime_start >= waiting_time){
                 // reset the start time for computations
                 waitingtime_start = timestamp;
-
                 //perform operations to obtain waiting time power from instantaneous powers
                 power_waitingtime = powerToEnergy(powersListForWaitingTimeBasedComputation, timestampsListForWaitingTimeBasedComputation);
                 logger.info("=== OUTPUT WAITING TIME VALUE =======" + power_waitingtime);
