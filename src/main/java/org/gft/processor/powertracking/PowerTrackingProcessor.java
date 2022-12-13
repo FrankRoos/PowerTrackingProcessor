@@ -77,7 +77,6 @@ public class PowerTrackingProcessor extends StreamPipesDataProcessor {
                 .build();
     }
 
-
     @Override
     public void onInvocation(ProcessorParams parameters, SpOutputCollector out, EventProcessorRuntimeContext ctx) throws SpRuntimeException  {
         this.input_power_value = parameters.extractor().mappingPropertyValue(INPUT_VALUE);
@@ -113,7 +112,7 @@ public class PowerTrackingProcessor extends StreamPipesDataProcessor {
                 timestampsListForWaitingTimeBasedComputation.add(timestamp);
             }
 
-            if (timestamp - hourlytime_start > 3600000) {
+            if (timestamp - hourlytime_start >= 3600000) {
                 // reset the start time for computations
                 hourlytime_start  = timestamp;
                 //perform operations to obtain hourly power from instantaneous powers
@@ -164,7 +163,6 @@ public class PowerTrackingProcessor extends StreamPipesDataProcessor {
         }
         return Double.parseDouble(df.format(sum/3600));
     }
-
 
     @Override
     public void onDetach(){
