@@ -58,6 +58,7 @@ public class PowerTrackingProcessor extends StreamPipesDataProcessor {
     List<Double> powersListForWaitingTimeBasedComputation = new ArrayList<>();
     List<Double> timestampsListForWaitingTimeBasedComputation = new ArrayList<>();
 
+
     @Override
     public DataProcessorDescription declareModel() {
         return ProcessingElementBuilder.create("org.gft.processor.powertracking","TimeTracking", "Computes waiting time and hourly Energy consumption based on the given instantaneous powers and timestamps values")
@@ -164,6 +165,7 @@ public class PowerTrackingProcessor extends StreamPipesDataProcessor {
         }
         return Double.parseDouble(df.format(sum/3600));
     }
+
 
     @Override
     public void onDetach(){
