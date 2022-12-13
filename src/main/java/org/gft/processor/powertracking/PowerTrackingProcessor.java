@@ -101,9 +101,7 @@ public class PowerTrackingProcessor extends StreamPipesDataProcessor {
             if(timestamp - waitingtime_start >= waiting_time){
                 // reset the start time for computations
                 waitingtime_start = timestamp;
-                // add power to the lists
-                powersListForWaitingTimeBasedComputation.add(power);
-                timestampsListForWaitingTimeBasedComputation.add(timestamp);
+
                 //perform operations to obtain waiting time power from instantaneous powers
                 power_waitingtime = powerToEnergy(powersListForWaitingTimeBasedComputation, timestampsListForWaitingTimeBasedComputation);
                 logger.info("=== OUTPUT WAITING TIME VALUE =======" + power_waitingtime);
@@ -118,7 +116,6 @@ public class PowerTrackingProcessor extends StreamPipesDataProcessor {
             if (timestamp - hourlytime_start > 3600000) {
                 // reset the start time for computations
                 hourlytime_start  = timestamp;
-
                 //perform operations to obtain hourly power from instantaneous powers
                 power_hourly = powerToEnergy(powersListForHourlyBasedComputation, timestampsListForHourlyBasedComputation);
                 logger.info("============================= OUTPUT HOURLY VALUE =========" + power_hourly);
