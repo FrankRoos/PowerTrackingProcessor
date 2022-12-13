@@ -1,5 +1,5 @@
 org.gft.processor.powertracking.title=PowerTracking
-org.gft.processor.powertracking.description=Convert Instantaneous Power to Hourly Power
+org.gft.processor.powertracking.description=Computes Instantaneous Powers to obtain Hourly Energy consumption.
 
 value.title= Instantaneous Power
 value.description= Energy Transfer speed in one second
@@ -8,4 +8,10 @@ timestamp_value.title= Timestamp
 timestamp_value.description= Time at which the power was taken.
 
 time_range.title = Waiting Time
-time_range.description = Insert the period or time value (in minute) after which an output will be generated.
+time_range.description = Insert the period or time value (in minute as a double) after which an output will be generated.
+
+power_waitingtime.title = Power_waitingtime
+power_waitingtime.description =  The power per waiting time value
+
+power_hourly.title = Power_hourly
+power_hourly.description =  The hourly power value

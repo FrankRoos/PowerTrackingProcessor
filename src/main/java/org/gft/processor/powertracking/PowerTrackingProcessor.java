@@ -23,15 +23,11 @@ import org.apache.streampipes.model.DataProcessorType;
 import org.apache.streampipes.model.graph.DataProcessorDescription;
 import org.apache.streampipes.model.runtime.Event;
 import org.apache.streampipes.model.schema.PropertyScope;
-// import org.apache.streampipes.sdk.builder.PrimitivePropertyBuilder;
 import org.apache.streampipes.sdk.builder.ProcessingElementBuilder;
 import org.apache.streampipes.sdk.builder.StreamRequirementsBuilder;
-import org.apache.streampipes.sdk.helpers.EpRequirements;
-import org.apache.streampipes.sdk.helpers.Labels;
-import org.apache.streampipes.sdk.helpers.Locales;
-import org.apache.streampipes.sdk.helpers.OutputStrategies;
+import org.apache.streampipes.sdk.helpers.*;
 import org.apache.streampipes.sdk.utils.Assets;
-// import org.apache.streampipes.sdk.utils.Datatypes;
+import org.apache.streampipes.vocabulary.SO;
 import org.apache.streampipes.wrapper.context.EventProcessorRuntimeContext;
 import org.apache.streampipes.wrapper.routing.SpOutputCollector;
 import org.apache.streampipes.wrapper.standalone.ProcessorParams;
@@ -46,12 +42,16 @@ import java.util.List;
 public class PowerTrackingProcessor extends StreamPipesDataProcessor {
     private String input_power_value;
     private String input_timestamp_value;
-    private Integer waiting_time;
+    private Double waiting_time;
     private Double waitingtime_start = 0.0;
     private Double hourlytime_start = 0.0;
+    double power_hourly = 0.0;
+    double power_waitingtime = 0.0;
     private static final String INPUT_VALUE = "value";
     private static final String TIMESTAMP_VALUE = "timestamp_value";
     private static final String WAITING_TIME = "time_range";
+    private static final String POWER_HOURLY = "power_hourly";
+    private static final String POWER_WAITINGTIME = "power_waitingtime";
 
     List<Double> powersListForHourlyBasedComputation = new ArrayList<>();
     List<Double> timestampsListForHourlyBasedComputation = new ArrayList<>();
@@ -61,7 +61,7 @@ public class PowerTrackingProcessor extends StreamPipesDataProcessor {
 
     @Override
     public DataProcessorDescription declareModel() {
-        return ProcessingElementBuilder.create("org.gft.processor.powertracking","TimeTracking", "Convert Instantaneous Power to Hourly Power")
+        return ProcessingElementBuilder.create("org.gft.processor.powertracking","TimeTracking", "Computes waiting time and hourly Energy consumption based on the given instantaneous powers and timestamps values")
                 .withAssets(Assets.DOCUMENTATION, Assets.ICON)
                 .withLocales(Locales.EN)
                 .category(DataProcessorType.AGGREGATE)
@@ -72,8 +72,8 @@ public class PowerTrackingProcessor extends StreamPipesDataProcessor {
                                 Labels.withId(TIMESTAMP_VALUE), PropertyScope.NONE)
                         .build())
                 .requiredIntegerParameter(Labels.withId(WAITING_TIME))
-                //.outputStrategy(OutputStrategies.append(PrimitivePropertyBuilder.create(Datatypes.Double, "outputValue").build()))
-                .outputStrategy(OutputStrategies.custom())
+                .outputStrategy(OutputStrategies.append(EpProperties.doubleEp(Labels.withId(POWER_WAITINGTIME), "power waitingtime", SO.Number),
+                        EpProperties.doubleEp(Labels.withId(POWER_HOURLY), "power hourly", SO.Number)))
                 .build();
     }
 
@@ -82,13 +82,11 @@ public class PowerTrackingProcessor extends StreamPipesDataProcessor {
     public void onInvocation(ProcessorParams parameters, SpOutputCollector out, EventProcessorRuntimeContext ctx) throws SpRuntimeException  {
         this.input_power_value = parameters.extractor().mappingPropertyValue(INPUT_VALUE);
         this.input_timestamp_value = parameters.extractor().mappingPropertyValue(TIMESTAMP_VALUE);
-        this.waiting_time = parameters.extractor().singleValueParameter(WAITING_TIME, Integer.class);
+        this.waiting_time = parameters.extractor().singleValueParameter(WAITING_TIME, Double.class);
     }
 
     @Override
     public void onEvent(Event event,SpOutputCollector out){
-        double power_hourly = 0.0;
-        double power_waitingtime = 0.0;
         double waiting_time = this.waiting_time*60*1000;
 
         //recovery input value
@@ -109,24 +107,26 @@ public class PowerTrackingProcessor extends StreamPipesDataProcessor {
                 timestampsListForWaitingTimeBasedComputation.add(timestamp);
                 //perform operations to obtain waiting time power from instantaneous powers
                 power_waitingtime = powerToEnergy(powersListForWaitingTimeBasedComputation, timestampsListForWaitingTimeBasedComputation);
+                logger.info("=== OUTPUT WAITING TIME VALUE =======" + power_waitingtime);
                 // Remove all elements from the Lists
                 powersListForWaitingTimeBasedComputation.clear();
                 timestampsListForWaitingTimeBasedComputation.clear();
+                // Add newly current events for the next computation
                 powersListForWaitingTimeBasedComputation.add(power);
                 timestampsListForWaitingTimeBasedComputation.add(timestamp);
             }
 
-            if (timestamp - hourlytime_start >= 3600000) {
+            if (timestamp - hourlytime_start > 3600000) {
                 // reset the start time for computations
                 hourlytime_start  = timestamp;
-                // add power to the lists
-                powersListForHourlyBasedComputation.add(power);
-                timestampsListForHourlyBasedComputation.add(timestamp);
+
                 //perform operations to obtain hourly power from instantaneous powers
                 power_hourly = powerToEnergy(powersListForHourlyBasedComputation, timestampsListForHourlyBasedComputation);
+                logger.info("============================= OUTPUT HOURLY VALUE =========" + power_hourly);
                 // Remove all elements from the Lists
                 powersListForHourlyBasedComputation.clear();
                 timestampsListForHourlyBasedComputation.clear();
+                // Add newly current events for the next computation
                 powersListForHourlyBasedComputation.add(power);
                 timestampsListForHourlyBasedComputation.add(timestamp);
             }
@@ -137,7 +137,6 @@ public class PowerTrackingProcessor extends StreamPipesDataProcessor {
                    hourlytime_start = timestamp;
                    waitingtime_start = timestamp;
                }
-
                // add power to the lists
                powersListForHourlyBasedComputation.add(power);
                timestampsListForHourlyBasedComputation.add(timestamp);
@@ -145,17 +144,9 @@ public class PowerTrackingProcessor extends StreamPipesDataProcessor {
                timestampsListForWaitingTimeBasedComputation.add(timestamp);
         }
 
-        if(power_waitingtime != 0.0){
-            logger.info("=== OUTPUT WAITING TIME VALUE =======" + power_waitingtime);
-            event.addField("Power per Waiting Time", power_waitingtime);
-            out.collect(event);
-        }
-
-        if(power_hourly != 0.0){
-            logger.info("============================= OUTPUT HOURLY VALUE =========" + power_hourly);
-            event.addField("Hourly Power", power_hourly);
-            out.collect(event);
-        }
+        event.addField("power waitingtime", power_waitingtime);
+        event.addField("power hourly", power_hourly);
+        out.collect(event);
 
     }
 
